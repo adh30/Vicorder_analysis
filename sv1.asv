@@ -1,0 +1,51 @@
+% ============================================================
+% Compute SV estimates
+% ============================================================
+SV = unified_SV_models(SBP, DBP, MAP, HR);
+
+SV_mod  = SV.modelflow;
+SV_vic  = SV.vicorder;
+SV_arc  = SV.arcsolver;
+SV_sph  = SV.sphygmo;
+
+
+% ============================================================
+% Regression helper function
+% ============================================================
+regfun = @(x,y) struct( ...
+    'slope', polyfit(x,y,1), ...
+    'r2',    corrcoef(x,y) );
+
+% ============================================================
+% Compute regressions for all pairwise combinations
+% ============================================================
+pairs = {
+    'Reference','Vicorder', SV_ref, SV_vic;
+    'Reference','ARCSolver', SV_ref, SV_arc;
+    'Modelflow','Sphygmo',   SV_ref, SV_sph;
+    'Vicorder','ARCSolver',  SV_vic, SV_mod;
+    'Vicorder','Sphygmo',    SV_vic, SV_sph;
+    'ARCSolver','Sphygmo',   SV_arc, SV_sph
+};
+
+fprintf('\n================ Regression Results ================\n');
+
+for k = 1:size(pairs,1)
+    name1 = pairs{k,1};
+    name2 = pairs{k,2};
+    x = pairs{k,3};
+    y = pairs{k,4};
+
+    % Fit regression
+    p = polyfit(x,y,1);
+    yfit = polyval(p,x);
+    r = corrcoef(x,y);
+    r2 = r(1,2)^2;
+
+    % Print results
+    fprintf('\n%s vs %s:\n', name1, name2);
+    fprintf('   y = %.3f*x + %.3f\n', p(1), p(2));
+    fprintf('   R^2 = %.4f\n', r2);
+end
+
+fprintf('\n===================================================\n');
